@@ -1,0 +1,5 @@
+Warning (10273): Verilog HDL warning at registers.sv(10): extended using "x" or "z" File: C:/intelFPGA_lite/rv32im(1)/registers.sv Line: 10
+Warning (10273): Verilog HDL warning at loadext.sv(40): extended using "x" or "z" File: C:/intelFPGA_lite/rv32im(1)/loadext.sv Line: 40
+Warning (10273): Verilog HDL warning at extend.sv(18): extended using "x" or "z" File: C:/intelFPGA_lite/rv32im(1)/extend.sv Line: 18
+Warning (10273): Verilog HDL warning at blocks.sv(84): extended using "x" or "z" File: C:/intelFPGA_lite/rv32im(1)/blocks.sv Line: 84
+Warning (10273): Verilog HDL warning at aludec.sv(41): extended using "x" or "z" File: C:/intelFPGA_lite/rv32im(1)/aludec.sv Line: 41
