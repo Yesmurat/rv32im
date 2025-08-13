@@ -82,7 +82,6 @@ module IDEXregister (input logic clk, clr,
             jumpRegE <= 1'b0;
             is_ME <= 1'b0;
 
-
             RD1E <= 32'b0; RD2E <= 32'b0; PCE <= 32'b0;
             Rs1E <= 5'b0; Rs2E <= 5'b0; RdE <= 5'b0;
             ImmExtE <= 32'b0;
@@ -178,7 +177,7 @@ module Intemediate_register (input logic clk,
     
 endmodule
 
-module EXMEMregister (input logic clk, clr, // EX -> MEM
+module IntermMEMregister (input logic clk, clr, // Interm -> MEM
 
                     // Intermediate stage control signals
                     input logic RegWrite_interm,
@@ -198,12 +197,16 @@ module EXMEMregister (input logic clk, clr, // EX -> MEM
                     input logic [4:0] Rd_interm,
                     input logic [31:0] ImmExt_interm,
                     input logic [31:0] PCPlus4_interm,
+                    input logic [63:0] mul_interm,
+                    input logic [63:0] mul_s_interm,
 
                     output logic [31:0] ALUResultM,
                     output logic [31:0] WriteDataM,
                     output logic [4:0] RdM,
                     output logic [31:0] ImmExtM,
-                    output logic [31:0] PCPlus4M
+                    output logic [31:0] PCPlus4M,
+                    output logic [63:0] mulM,
+                    output logic [63:0] mul_sM
 );
 
     always_ff @(posedge clk or posedge clr) begin

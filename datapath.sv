@@ -261,7 +261,6 @@ module datapath (input logic clk, clr,
     );
 
     logic [63:0] mul_interm, mul_s_interm;
-    logic [31:0] mul_result_interm;
 
     multiplier multiplier (
         .dataa(SrcA_interm),
@@ -274,18 +273,6 @@ module datapath (input logic clk, clr,
         .datab(SrcB_interm),
         .result(mul_s_interm)
     );
-
-    always_comb begin
-        if (is_M_interm) begin
-            case (funct3_interm)
-                3'b000: mul_result_interm = mul_interm[31:0] // low unsigned x signed
-                3'b001: mul_result_interm = mul_s_interm[63:32] // high signed x signed
-                3'b010: mul_result_interm = mul_interm[63:32] - (SrcA_interm[31] ? SrcB_interm : 32'b0); // high signed x unsigned
-                3'b011: mul_result_interm = mul_interm[63:32] // high unsigned x unsigned
-                default: mul_result_interm = 32'b0;
-            endcase
-        end else mul_result_interm = 32'b0;
-    end // done...
 
     // Memory write (MEM) stage
     logic [31:0] PCPlus4M;
@@ -302,7 +289,7 @@ module datapath (input logic clk, clr,
     logic [31:0] load_data;
     logic [31:0] ImmExtM;
 
-    EXMEMregister exmemreg(
+    IntermMEMregister interm_memreg(
         .clk(clk), .clr(clr),
         // EX stage control signals
         .RegWriteE(RegWriteE),
@@ -354,6 +341,18 @@ module datapath (input logic clk, clr,
         .byteAddrM(byteAddrM),
         .load_data(load_data)
     );
+
+    always_comb begin
+        if (is_M_interm) begin
+            case (funct3_interm)
+                3'b000: mul_result_interm = mul_interm[31:0] // low unsigned x signed
+                3'b001: mul_result_interm = mul_s_interm[63:32] // high signed x signed
+                3'b010: mul_result_interm = mul_interm[63:32] - (SrcA_interm[31] ? SrcB_interm : 32'b0); // high signed x unsigned
+                3'b011: mul_result_interm = mul_interm[63:32] // high unsigned x unsigned
+                default: mul_result_interm = 32'b0;
+            endcase
+        end else mul_result_interm = 32'b0;
+    end // moved the select logic for multiplication results to MEM stage because it can run in parallel with other blocks in the stage.
 
     // -------------------------------------------------------------//
     // Register file writeback (WB) stage
