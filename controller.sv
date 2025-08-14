@@ -12,7 +12,8 @@ module controller (input logic [6:0] op,
                    output logic [2:0] ImmSrcD,
                    output logic SrcAsrcD,
                    output logic [2:0] funct3D,
-                   output logic jumpRegD);
+                   output logic jumpRegD,
+                   output logic is_M);
 
     logic [1:0] ALUOp;
     assign funct3D = funct3;
@@ -30,7 +31,8 @@ module controller (input logic [6:0] op,
         .ImmSrcD(ImmSrcD),
         .ALUOp(ALUOp),
         .SrcAsrcD(SrcAsrcD),
-        .jumpRegD(jumpRegD)
+        .jumpRegD(jumpRegD),
+        .is_M(is_M)
     );
 
     aludec ad(

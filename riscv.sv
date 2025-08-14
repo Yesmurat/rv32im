@@ -18,6 +18,7 @@ module riscv (input logic clk, clr,
     logic ALUSrcD;
     logic [2:0] ImmSrcD;
     logic SrcAsrcD;
+    logic is_M;
 
     logic [31:0] InstrD;
     logic ResultSrcE_zero;
@@ -56,7 +57,8 @@ module riscv (input logic clk, clr,
         .ImmSrcD(ImmSrcD),
         .SrcAsrcD(SrcAsrcD),
         .funct3D(funct3),
-        .jumpRegD(jumpRegD)
+        .jumpRegD(jumpRegD),
+        .is_M(is_M)
     );
 
     datapath dp(.clk(clk), .clr(clr),
@@ -73,6 +75,7 @@ module riscv (input logic clk, clr,
                 .SrcAsrcD(SrcAsrcD),
                 .funct3D(funct3),
                 .jumpRegD(jumpRegD),
+                .is_M(is_M),
 
                 // inputs from Hazard unit
                 .StallF(StallF), .StallD(StallD), .FlushD(FlushD), .FlushE(FlushE),

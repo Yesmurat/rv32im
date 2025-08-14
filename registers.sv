@@ -108,7 +108,7 @@ module IDEXregister (input logic clk, clr,
     end   
 endmodule
 
-module Intemediate_register (input logic clk,
+module Intemediate_register (input logic clk, clr,
                     
                     // EX stage control signals
                     input logic RegWriteE,
@@ -184,12 +184,14 @@ module IntermMEMregister (input logic clk, clr, // Interm -> MEM
                     input logic [1:0] ResultSrc_interm,
                     input logic MemWrite_interm,
                     input logic [2:0] funct3_interm,
+                    input logic is_M_interm,
 
                     // MEM stage control signals
                     output logic RegWriteM,
                     output logic [1:0] ResultSrcM,
                     output logic MemWriteM,
                     output logic [2:0] funct3M,
+                    output logic is_MM,
 
                     // datapath inputs & outputs
                     input logic [31:0] ALUResult_interm,
@@ -199,6 +201,8 @@ module IntermMEMregister (input logic clk, clr, // Interm -> MEM
                     input logic [31:0] PCPlus4_interm,
                     input logic [63:0] mul_interm,
                     input logic [63:0] mul_s_interm,
+                    input logic SrcA_b31_interm,
+                    input logic SrcB_interm,
 
                     output logic [31:0] ALUResultM,
                     output logic [31:0] WriteDataM,
@@ -206,7 +210,9 @@ module IntermMEMregister (input logic clk, clr, // Interm -> MEM
                     output logic [31:0] ImmExtM,
                     output logic [31:0] PCPlus4M,
                     output logic [63:0] mulM,
-                    output logic [63:0] mul_sM
+                    output logic [63:0] mul_sM,
+                    output logic SrcA_b31M,
+                    output logic [31:0] SrcBM
 );
 
     always_ff @(posedge clk or posedge clr) begin
@@ -216,23 +222,33 @@ module IntermMEMregister (input logic clk, clr, // Interm -> MEM
             ResultSrcM <= 2'b0;
             MemWriteM <= 1'b0;
             funct3M <= 3'b0;
+            is_MM <= 1'b0;
 
             ALUResultM <= 32'b0;
             WriteDataM <= 32'b0;
             RdM <= 5'b0;
             ImmExtM <= 32'b0;
             PCPlus4M <= 32'b0;
+            mulM <= 64'b0;
+            mul_sM <= 64'b0;
+            SrcA_b31M <= 1'b0;
+            SrcBM <= 32'b0;
         end else begin
             RegWriteM <= RegWrite_interm;
             ResultSrcM <= ResultSrc_interm;
             MemWriteM <= MemWrite_interm;
             funct3M <= funct3_interm;
+            is_MM <= is_M_interm;
 
             ALUResultM <= ALUResult_interm;
             WriteDataM <= WriteData_interm;
             RdM <= Rd_interm;
             ImmExtM <= ImmExt_interm;
             PCPlus4M <= PCPlus4_interm;
+            mulM <= mul_interm;
+            mul_sM <= mul_s_interm;
+            SrcA_b31M <= SrcA_b31_interm;
+            SrcBM <= SrcB_interm;
         end
     end  
 endmodule
@@ -253,12 +269,14 @@ module MEMWBregister (input logic clk, clr, // MEM -> WB
                     input logic [4:0] RdM,
                     input logic [31:0] ImmExtM,
                     input logic [31:0] PCPlus4M,
+                    input logic [31:0] mul_resultM,
 
                     output logic [31:0] ALUResultW,
                     output logic [31:0] ReadDataW,
                     output logic [4:0] RdW,
                     output logic [31:0] ImmExtW,
-                    output logic [31:0] PCPlus4W
+                    output logic [31:0] PCPlus4W,
+                    output logic [31:0] mul_resultW
 );
 
     always_ff @(posedge clk or posedge clr) begin
@@ -271,6 +289,7 @@ module MEMWBregister (input logic clk, clr, // MEM -> WB
             RdW <= 5'b0;
             ImmExtW <= 32'b0;
             PCPlus4W <= 32'b0;
+            mul_resultW <= 32'b0;
         end else begin
             RegWriteW <= RegWriteM;
             ResultSrcW <= ResultSrcM;
@@ -280,6 +299,7 @@ module MEMWBregister (input logic clk, clr, // MEM -> WB
             RdW <= RdM;
             ImmExtW <= ImmExtM;
             PCPlus4W <= PCPlus4M;
+            mul_resultW <= mul_resultM;
         end
     end   
 endmodule

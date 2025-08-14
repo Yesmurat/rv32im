@@ -11,6 +11,7 @@ module datapath (input logic clk, clr,
                 input logic SrcAsrcD,
                 input logic [2:0] funct3D,
                 input logic jumpRegD,
+                input logic is_M,
                 
                 // input signals from Hazard Unit
                 input logic StallF, StallD, FlushD, FlushE,
@@ -124,6 +125,7 @@ module datapath (input logic clk, clr,
     logic [2:0] funct3E;
     logic branchTakenE;
     logic jumpRegE;
+    logic is_ME;
 
     IDEXregister idexreg(
         .clk(clk), .clr(FlushE | clr),
@@ -138,6 +140,7 @@ module datapath (input logic clk, clr,
         .SrcAsrcD(SrcAsrcD),
         .funct3D(funct3D),
         .jumpRegD(jumpRegD),
+        .is_M(is_M),
 
         // EX stage control signals
         .RegWriteE(RegWriteE),
@@ -150,6 +153,7 @@ module datapath (input logic clk, clr,
         .SrcAsrcE(SrcAsrcE),
         .funct3E(funct3E),
         .jumpRegE(jumpRegE),
+        .is_ME(is_ME),
 
         // datapath inputs & outputs
         .RD1(RD1), .RD2(RD2), .PCD(PCD),
@@ -268,7 +272,7 @@ module datapath (input logic clk, clr,
         .result(mul_interm)
     );
 
-    multiplier multiplier (
+    multiplier_s multiplier_s (
         .dataa(SrcA_interm),
         .datab(SrcB_interm),
         .result(mul_s_interm)
@@ -289,32 +293,48 @@ module datapath (input logic clk, clr,
     logic [31:0] load_data;
     logic [31:0] ImmExtM;
 
+    logic is_MM;
+    logic [63:0] mulM, mul_sM;
+    logic [31:0] mul_resultM;
+    logic SrcA_b31M;
+    logic [31:0] SrcBM;
+
     IntermMEMregister interm_memreg(
         .clk(clk), .clr(clr),
-        // EX stage control signals
-        .RegWriteE(RegWriteE),
-        .ResultSrcE(ResultSrcE),
-        .MemWriteE(MemWriteE),
-        .funct3E(funct3E),
+        // Intermediate stage control signals
+        .RegWrite_interm(RegWrite_interm),
+        .ResultSrc_interm(ResultSrc_interm),
+        .MemWrite_interm(MemWrite_interm),
+        .funct3_interm(funct3_interm),
+        .is_M_interm(is_M_interm),
 
         // MEM stage control signals
         .RegWriteM(RegWriteM_int),
         .ResultSrcM(ResultSrcM),
         .MemWriteM(MemWriteM),
         .funct3M(funct3M),
+        .is_MM(is_MM),
 
         // datapath inputs & outputs
-        .ALUResultE(ALUResultE),
-        .WriteDataE(WriteDataE),
-        .RdE(RdE),
-        .ImmExtE(ImmExtE),
-        .PCPlus4E(PCPlus4E),
+        .ALUResult_interm(ALUResult_interm),
+        .WriteData_interm(WriteData_interm),
+        .Rd_interm(Rd_interm),
+        .ImmExt_interm(ImmExt_interm),
+        .PCPlus4_interm(PCPlus4_interm),
+        .mul_interm(mul_interm),
+        .mul_s_interm(mul_s_interm),
+        .SrcA_b31_interm(SrcA_interm[31]),
+        .SrcB_interm(SrcB_interm),
 
         .ALUResultM(ALUResultM), // output to Data Memory
         .WriteDataM(WriteDataM),
         .RdM(RdM),
         .ImmExtM(ImmExtM),
-        .PCPlus4M(PCPlus4M)
+        .PCPlus4M(PCPlus4M),
+        .mulM(mulM),
+        .mul_sM(mul_sM),
+        .SrcA_b31M(SrcA_b31M),
+        .SrcBM(SrcBM)
     );
 
     always_comb begin
@@ -343,15 +363,15 @@ module datapath (input logic clk, clr,
     );
 
     always_comb begin
-        if (is_M_interm) begin
-            case (funct3_interm)
-                3'b000: mul_result_interm = mul_interm[31:0] // low unsigned x signed
-                3'b001: mul_result_interm = mul_s_interm[63:32] // high signed x signed
-                3'b010: mul_result_interm = mul_interm[63:32] - (SrcA_interm[31] ? SrcB_interm : 32'b0); // high signed x unsigned
-                3'b011: mul_result_interm = mul_interm[63:32] // high unsigned x unsigned
-                default: mul_result_interm = 32'b0;
+        if (is_MM) begin
+            case (funct3M)
+                3'b000: mul_resultM = mulM[31:0]; // low unsigned x signed
+                3'b001: mul_resultM = mul_sM[63:32]; // high signed x signed
+                3'b010: mul_resultM = mulM[63:32] - (SrcA_b31M ? SrcBM : 32'b0); // high signed x unsigned
+                3'b011: mul_resultM = mulM[63:32]; // high unsigned x unsigned
+                default: mul_resultM = 32'b0;
             endcase
-        end else mul_result_interm = 32'b0;
+        end else mul_resultM = 32'b0;
     end // moved the select logic for multiplication results to MEM stage because it can run in parallel with other blocks in the stage.
 
     // -------------------------------------------------------------//
@@ -361,6 +381,8 @@ module datapath (input logic clk, clr,
     logic [31:0] PCPlus4W;
     logic [31:0] ImmExtW;
     logic [1:0] ResultSrcW;
+
+    logic [31:0] mul_resultW;
 
     MEMWBregister wbreg(
         .clk(clk), .clr(clr),
@@ -378,12 +400,14 @@ module datapath (input logic clk, clr,
         .RdM(RdM),
         .ImmExtM(ImmExtM),
         .PCPlus4M(PCPlus4M),
+        .mul_resultM(mul_resultM),
 
         .ALUResultW(ALUResultW),
         .ReadDataW(ReadDataW),
         .RdW(RdW),
         .ImmExtW(ImmExtW),
-        .PCPlus4W(PCPlus4W)
+        .PCPlus4W(PCPlus4W),
+        .mul_resultW(mul_resultW)
     );
 
     mux4 ResultWmux(
