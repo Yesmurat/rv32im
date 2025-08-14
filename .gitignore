@@ -1,0 +1,13 @@
+# Quartus temporary and database files
+db/
+incremental_db/
+output_files/
+*.rpt
+*.qws
+*.bak
+*.sof
+*.pof
+*.jic
+*.smsg
+*.rdr*
+*.log
